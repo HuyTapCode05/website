@@ -1,0 +1,14 @@
+package com.ecommerce.dto;
+
+import lombok.Data;
+import java.math.BigDecimal;
+import java.util.List;
+
+@Data
+public class CartResponse {
+    private Long id;
+    private List<CartItemResponse> items;
+    private BigDecimal total;
+    private BigDecimal discount;
+    private BigDecimal finalTotal;
+}
