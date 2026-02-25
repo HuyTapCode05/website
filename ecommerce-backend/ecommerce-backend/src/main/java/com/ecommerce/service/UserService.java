@@ -6,11 +6,18 @@ import com.ecommerce.dto.LoginResponse;
 import com.ecommerce.model.User;
 import com.ecommerce.repository.UserRepository;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.ecommerce.util.JwtUtil;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.UUID;
 
 @Service
@@ -21,6 +28,9 @@ public class UserService {
     private final PasswordEncoder encoder;
     private final EmailService emailService;
     private final JwtUtil jwtUtil;
+
+    @Value("${google.client.id}")
+    private String googleClientId;
 
     // REGISTER
     public String register(RegisterRequest req) {
@@ -33,7 +43,7 @@ public class UserService {
                 .name(req.getName())
                 .email(req.getEmail())
                 .password(encoder.encode(req.getPassword()))
-                .role("ROLE_USER") 
+                .role("ROLE_USER")
                 .enabled(false)
                 .build();
 
@@ -50,8 +60,7 @@ public class UserService {
         emailService.sendEmail(
                 user.getEmail(),
                 "Xác thực tài khoản",
-                emailHtml
-        );
+                emailHtml);
 
         return "Đăng ký thành công! Vui lòng kiểm tra email để kích hoạt tài khoản.";
     }
@@ -73,13 +82,75 @@ public class UserService {
         String token = jwtUtil.generateToken(user);
 
         return new LoginResponse(
-            user.getId(),
-            user.getName(),
-            user.getEmail(),
-            user.getRole(),
-            token
-        );
+                user.getId(),
+                user.getName(),
+                user.getEmail(),
+                user.getRole(),
+                token);
 
+    }
+
+    // ==============================
+    // LOGIN WITH GOOGLE
+    // ==============================
+    public LoginResponse loginWithGoogle(String googleIdToken) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                    new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(googleIdToken);
+            if (idToken == null) {
+                throw new RuntimeException("Google token không hợp lệ");
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String avatarUrl = (String) payload.get("picture");
+
+            // Tìm user hoặc tạo mới
+            User user = userRepository.findByEmail(email).orElse(null);
+
+            if (user == null) {
+                // Tạo user mới (đã xác thực qua Google → enabled=true)
+                user = User.builder()
+                        .name(name != null ? name : "Google User")
+                        .email(email)
+                        .password(null) // Không cần password cho Google login
+                        .avatarUrl(avatarUrl)
+                        .role("ROLE_USER")
+                        .enabled(true)
+                        .build();
+                userRepository.save(user);
+            } else {
+                // Cập nhật avatar nếu chưa có
+                if (user.getAvatarUrl() == null && avatarUrl != null) {
+                    user.setAvatarUrl(avatarUrl);
+                    userRepository.save(user);
+                }
+                // Kích hoạt tài khoản nếu chưa (đã xác thực qua Google)
+                if (!user.isEnabled()) {
+                    user.setEnabled(true);
+                    userRepository.save(user);
+                }
+            }
+
+            String token = jwtUtil.generateToken(user);
+
+            return new LoginResponse(
+                    user.getId(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getRole(),
+                    token);
+
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi xác thực Google: " + e.getMessage());
+        }
     }
 
     // VERIFY ACCOUNT
@@ -119,8 +190,7 @@ public class UserService {
         emailService.sendEmail(
                 email,
                 "Đặt lại mật khẩu",
-                emailHtml
-        );
+                emailHtml);
 
         return "Đã gửi email đặt lại mật khẩu.";
     }

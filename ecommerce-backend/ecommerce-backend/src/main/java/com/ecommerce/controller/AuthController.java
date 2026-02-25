@@ -23,6 +23,14 @@ public class AuthController {
         return userService.login(req);
     }
 
+    // ==============================
+    // LOGIN WITH GOOGLE
+    // ==============================
+    @PostMapping("/google")
+    public LoginResponse googleLogin(@RequestBody GoogleLoginRequest req) {
+        return userService.loginWithGoogle(req.getCredential());
+    }
+
     @GetMapping("/verify")
     public String verify(@RequestParam String token) {
         return userService.verifyAccount(token);

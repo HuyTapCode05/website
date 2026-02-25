@@ -1,12 +1,22 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { api } from "../api/axiosClient";
 import { Link, useNavigate } from "react-router-dom";
 import axios from "axios";
 
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+const GOOGLE_CLIENT_ID = "13827086508-im3lrpg48qukkar5ob2tnt8v8s3rmav7.apps.googleusercontent.com";
+
 export default function Login() {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const googleBtnRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -15,6 +25,77 @@ export default function Login() {
       navigate(role === "ROLE_ADMIN" ? "/admin/products" : "/");
     }
   }, [navigate]);
+
+  // Initialize Google Sign-In
+  useEffect(() => {
+    const initGoogle = () => {
+      if (window.google && googleBtnRef.current) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleResponse,
+        });
+        window.google.accounts.id.renderButton(googleBtnRef.current, {
+          theme: "outline",
+          size: "large",
+          width: "100%",
+          text: "signin_with",
+          shape: "pill",
+          logo_alignment: "center",
+        });
+      }
+    };
+
+    // Google script might not be loaded yet
+    if (window.google) {
+      initGoogle();
+    } else {
+      const interval = setInterval(() => {
+        if (window.google) {
+          clearInterval(interval);
+          initGoogle();
+        }
+      }, 100);
+      return () => clearInterval(interval);
+    }
+  }, []);
+
+  const handleGoogleResponse = async (response: any) => {
+    setGoogleLoading(true);
+    try {
+      const res = await api.post("/auth/google", {
+        credential: response.credential,
+      });
+
+      const token = res.data.token;
+      const userId = res.data.id;
+
+      localStorage.setItem("token", token);
+      localStorage.setItem("userId", userId);
+      localStorage.setItem("role", res.data.role);
+      localStorage.setItem("name", res.data.name);
+      localStorage.setItem("email", res.data.email);
+      window.dispatchEvent(new Event("role-changed"));
+
+      try {
+        const profile = await api.get(`/api/profile?userId=${userId}`, {
+          headers: { Authorization: "Bearer " + token },
+        });
+        localStorage.setItem("name", profile.data.name);
+        localStorage.setItem("email", profile.data.email);
+        localStorage.setItem("avatar", profile.data.avatarUrl || "");
+      } catch {}
+
+      navigate(res.data.role === "ROLE_ADMIN" ? "/admin" : "/");
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        alert(err.response?.data?.message || "Lỗi đăng nhập Google");
+      } else {
+        alert("Lỗi không xác định");
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -150,6 +231,25 @@ export default function Login() {
                 "Đăng nhập"
               )}
             </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-gray-200"></div>
+              <span className="text-xs text-gray-400 font-medium">hoặc</span>
+              <div className="flex-1 h-px bg-gray-200"></div>
+            </div>
+
+            {/* Google Sign-In Button */}
+            <div className="flex justify-center">
+              {googleLoading ? (
+                <div className="flex items-center justify-center gap-2 py-3 text-sm text-gray-500">
+                  <div className="w-4 h-4 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+                  <span>Đang đăng nhập với Google...</span>
+                </div>
+              ) : (
+                <div ref={googleBtnRef} className="w-full flex justify-center"></div>
+              )}
+            </div>
 
             {/* Register link */}
             <div className="text-center pt-4 border-t border-gray-100">
