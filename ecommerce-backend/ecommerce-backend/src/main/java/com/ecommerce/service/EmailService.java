@@ -1,6 +1,7 @@
 package com.ecommerce.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
@@ -13,11 +14,15 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+    @Value("${spring.mail.username}")
+    private String fromEmail;
+
     public void sendEmail(String to, String subject, String content) {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
+            helper.setFrom(fromEmail);
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(content, true); // true = HTML content
@@ -25,7 +30,7 @@ public class EmailService {
             mailSender.send(message);
             System.out.println("📩 Email đã gửi thành công: " + to);
         } catch (Exception e) {
-            System.err.println("❌ Lỗi gửi email: Mail server connection failed. " + e.getMessage());
+            System.err.println("❌ Lỗi gửi email: " + e.getMessage());
             if (e.getCause() != null) {
                 System.err.println("   Nguyên nhân: " + e.getCause().getMessage());
             }

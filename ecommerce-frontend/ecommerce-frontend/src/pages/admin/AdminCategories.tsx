@@ -8,20 +8,17 @@ export default function AdminCategories() {
 
   if (role !== "ROLE_ADMIN") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 p-6 flex items-center justify-center">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center border border-red-200">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0F1117" }}>
+        <div className="rounded-2xl p-8 text-center max-w-md w-full" style={{ background: "#111827", border: "1px solid #1F2937" }}>
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ background: "rgba(239,68,68,0.15)" }}>
+            <span className="text-2xl">🔒</span>
           </div>
-          <h1 className="text-2xl font-bold text-red-600 mb-3">Truy Cập Bị Từ Chối</h1>
-          <p className="text-gray-600 mb-6">Bạn không có quyền truy cập trang quản trị!</p>
-          <button
-            onClick={() => (window.location.href = "/")}
-            className="bg-gradient-to-r from-gray-800 to-gray-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-300"
-          >
-            🏠 Quay lại trang chủ
+          <h1 className="text-xl font-bold text-white mb-2">Truy cập bị từ chối</h1>
+          <p className="text-sm mb-6" style={{ color: "#6B7280" }}>Bạn không có quyền truy cập trang này</p>
+          <button onClick={() => (window.location.href = "/")}
+            className="px-6 py-2.5 rounded-xl text-sm font-semibold transition-all"
+            style={{ background: "#C9A96E", color: "#111827" }}>
+            Về trang chủ
           </button>
         </div>
       </div>
@@ -29,115 +26,67 @@ export default function AdminCategories() {
   }
 
   const {
-    categories,
-    newCat,
-    setNewCat,
-    createCategory,
-    startEdit,
-    deleteCategory,
-    editingId
+    categories, newCat, setNewCat,
+    createCategory, startEdit, deleteCategory, editingId
   } = useAdminCategories();
 
   return (
-    <div className="min-h-screen p-6" style={{ background: '#FAFAFA' }}>
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen" style={{ background: "#0F1117" }}>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6 space-y-6">
         <AdminHeader title="Quản lý danh mục" />
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-5xl mx-auto">
-        <div className="bg-white rounded-2xl shadow-lg p-8 border border-gray-200">
-          {/* Page Header */}
-          <div className="flex items-center gap-4 mb-8 pb-6 border-b border-gray-100">
-            {/* <div className={`w-3 h-12 rounded-full ${editingId ? 'bg-yellow-500' : 'bg-green-500'}`}></div> */}
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                {editingId ? "Cập nhật danh mục" : "Quản lý danh mục"}
-              </h1>
-              <p className="text-gray-600 mt-2">
-                {editingId
-                  ? "Chỉnh sửa thông tin danh mục sản phẩm"
-                  : "Tạo và quản lý các danh mục sản phẩm trong hệ thống"
-                }
-              </p>
-            </div>
-            <div className="ml-auto px-4 py-2 rounded-full text-sm font-semibold" style={{ background: 'rgba(201,169,110,0.15)', color: '#C9A96E' }}>
+        {/* Page Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-white">
+              {editingId ? "Cập nhật danh mục" : "Danh mục"}
+            </h1>
+            <p className="text-sm mt-1" style={{ color: "#6B7280" }}>
+              {editingId ? "Chỉnh sửa thông tin danh mục" : "Tạo và quản lý danh mục sản phẩm"}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            {editingId && (
+              <span className="text-xs font-medium px-2.5 py-1 rounded-full" style={{ background: "rgba(251,191,36,0.15)", color: "#FBBF24" }}>
+                Đang chỉnh sửa
+              </span>
+            )}
+            <span className="text-sm font-semibold px-3 py-1.5 rounded-lg"
+              style={{ background: "rgba(201,169,110,0.15)", color: "#C9A96E" }}>
               {categories.length} danh mục
-            </div>
+            </span>
+          </div>
+        </div>
+
+        {/* Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Form */}
+          <div className="rounded-2xl p-6" style={{ background: "#111827", border: "1px solid #1F2937" }}>
+            <h2 className="font-bold text-white mb-4">
+              {editingId ? "✏️ Sửa danh mục" : "➕ Tạo danh mục mới"}
+            </h2>
+            <CreateCategoryForm
+              newCat={newCat} setNewCat={setNewCat}
+              onCreate={createCategory} isEditing={!!editingId}
+            />
           </div>
 
-          {/* Form và List Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* Create/Edit Form */}
-            <div className="lg:col-span-1">
-              <div className="bg-gradient-to-br from-gray-50 to-amber-50/30 rounded-xl p-6 border border-gray-200">
-                <CreateCategoryForm
-                  newCat={newCat}
-                  setNewCat={setNewCat}
-                  onCreate={createCategory}
-                  isEditing={!!editingId}
-                />
-              </div>
-            </div>
+          {/* List */}
+          <div className="rounded-2xl p-6" style={{ background: "#111827", border: "1px solid #1F2937" }}>
+            <h2 className="font-bold text-white mb-4">📂 Danh sách danh mục</h2>
+            <CategoryList categories={categories} onEdit={startEdit} onDelete={deleteCategory} />
 
-            {/* Categories List */}
-            <div className="lg:col-span-1">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                    Danh sách danh mục
-                  </h2>
-                  {editingId && (
-                    <span className="bg-yellow-100 text-yellow-600 px-3 py-1 rounded-full text-sm font-medium flex items-center gap-1">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      Đang chỉnh sửa
-                    </span>
-                  )}
+            {categories.length === 0 && (
+              <div className="text-center py-12">
+                <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3"
+                  style={{ background: "rgba(201,169,110,0.1)" }}>
+                  <span className="text-2xl">📂</span>
                 </div>
-
-                <CategoryList
-                  categories={categories}
-                  onEdit={startEdit}
-                  onDelete={deleteCategory}
-                />
-
-                {/* Empty State */}
-                {categories.length === 0 && (
-                  <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-300">
-                    <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-700 mb-2">Chưa có danh mục nào</h3>
-                    <p className="text-gray-500 text-sm">Hãy thêm danh mục đầu tiên để bắt đầu!</p>
-                  </div>
-                )}
+                <h3 className="font-semibold text-white mb-1">Chưa có danh mục</h3>
+                <p className="text-sm" style={{ color: "#6B7280" }}>Thêm danh mục đầu tiên để bắt đầu</p>
               </div>
-            </div>
+            )}
           </div>
-
-          {/* Quick Stats */}
-          {/* <div className="mt-8 pt-6 border-t border-gray-100">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-600">{categories.length}</div>
-                <div className="text-sm text-blue-500 font-medium">Tổng số</div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-green-600">{categories.length}</div>
-                <div className="text-sm text-green-500 font-medium">Đang hoạt động</div>
-              </div>
-              <div className="bg-yellow-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-yellow-600">{editingId ? 1 : 0}</div>
-                <div className="text-sm text-yellow-500 font-medium">Đang chỉnh sửa</div>
-              </div>
-              <div className="bg-purple-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-purple-600">0</div>
-                <div className="text-sm text-purple-500 font-medium">Đã ẩn</div>
-              </div>
-            </div>
-          </div> */}
         </div>
       </div>
     </div>

@@ -1,69 +1,50 @@
-interface Props {
-  order: any;
-}
+interface Props { order: any; }
 
 export default function OrderSummary({ order }: Props) {
-  const finalTotal =
-    order.totalAmount + order.shippingFee - order.discountAmount;
+  const total = order.totalAmount + order.shippingFee - order.discountAmount;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-200">
-      {/* Header */}
-      <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-        <h2 className="text-xl font-semibold text-gray-800">Tổng kết đơn hàng</h2>
+    <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+      <div className="px-6 py-4 border-b border-gray-100">
+        <h3 className="font-bold text-gray-800">Sản phẩm đã đặt</h3>
       </div>
-
-      {/* Pricing Breakdown */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Tổng tiền hàng:</span>
-          <span className="font-semibold text-gray-800">{order.totalAmount.toLocaleString()}₫</span>
-        </div>
-
-        <div className="flex justify-between items-center">
-          <span className="text-gray-600">Phí vận chuyển:</span>
-          <span className="font-semibold text-gray-800">{order.shippingFee.toLocaleString()}₫</span>
-        </div>
-
-        {order.discountAmount > 0 && (
-          <div className="flex justify-between items-center">
-            <span className="text-green-600">Giảm giá:</span>
-            <span className="font-semibold text-green-600">-{order.discountAmount.toLocaleString()}₫</span>
-          </div>
-        )}
-
-        {/* Coupon Code */}
-        {order.couponCode && (
-          <div className="flex justify-between items-center bg-blue-50 p-3 rounded-lg border border-blue-200">
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-              </svg>
-              <span className="text-blue-600 font-medium">Mã giảm giá:</span>
+      {order.items && order.items.length > 0 && (
+        <div className="divide-y divide-gray-50">
+          {order.items.map((item: any, i: number) => (
+            <div key={i} className="flex items-center gap-3 px-6 py-3 hover:bg-gray-50/50 transition-colors">
+              {item.imageUrl && (
+                <img src={"http://localhost:8080" + item.imageUrl}
+                  className="w-14 h-14 rounded-xl object-cover flex-shrink-0 bg-gray-100" alt={item.productName}
+                  onError={e => { (e.target as HTMLImageElement).src = "/no-image.png"; }} />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-800 truncate">{item.productName}</p>
+                <p className="text-xs text-gray-400">SL: {item.quantity}</p>
+              </div>
+              <p className="text-sm font-bold text-gray-800">{(item.price * item.quantity).toLocaleString()}đ</p>
             </div>
-            <span className="font-semibold text-blue-600">{order.couponCode}</span>
-          </div>
-        )}
-
-        {/* Total */}
-        <div className="border-t border-gray-200 pt-4">
-          <div className="flex justify-between items-center">
-            <span className="text-lg font-bold text-gray-800">Tổng thanh toán:</span>
-            <span className="text-2xl font-bold text-red-600">{finalTotal.toLocaleString()}₫</span>
-          </div>
+          ))}
         </div>
-
-        {/* Savings Info */}
+      )}
+      <div className="px-6 py-4 space-y-2 bg-gray-50/50 border-t border-gray-100">
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Tổng hàng</span>
+          <span className="font-semibold text-gray-800">{order.totalAmount.toLocaleString()}đ</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-gray-500">Phí ship</span>
+          <span className="font-semibold text-emerald-600">{order.shippingFee > 0 ? order.shippingFee.toLocaleString() + "đ" : "Miễn phí"}</span>
+        </div>
         {order.discountAmount > 0 && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-4">
-            <div className="flex items-center gap-2 text-green-700 text-sm">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span>Bạn đã tiết kiệm được {order.discountAmount.toLocaleString()}₫</span>
-            </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-emerald-600">Giảm giá {order.couponCode && `(${order.couponCode})`}</span>
+            <span className="font-bold text-emerald-600">−{order.discountAmount.toLocaleString()}đ</span>
           </div>
         )}
+        <div className="flex justify-between pt-2 border-t border-gray-200">
+          <span className="font-bold text-gray-800">Tổng thanh toán</span>
+          <span className="text-lg font-bold" style={{ color: '#C9A96E' }}>{total.toLocaleString()}đ</span>
+        </div>
       </div>
     </div>
   );

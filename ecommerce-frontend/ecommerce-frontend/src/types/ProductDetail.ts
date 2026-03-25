@@ -1,3 +1,13 @@
+export interface ProductVariant {
+  id: number;
+  sku: string;
+  color: string;
+  size: string;
+  stock: number;
+  price: number;
+  salePrice?: number;
+}
+
 export interface ProductDetail {
   id: number;
   name: string;
@@ -7,4 +17,6 @@ export interface ProductDetail {
   description: string;
   imageUrl: string;
   categoryName: string;
+  variants?: ProductVariant[];
 }
+

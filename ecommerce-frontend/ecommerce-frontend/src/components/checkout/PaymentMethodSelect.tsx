@@ -3,76 +3,38 @@ interface PaymentMethodSelectProps {
   setPaymentMethod: (value: string) => void;
 }
 
-export default function PaymentMethodSelect({
-  paymentMethod,
-  setPaymentMethod,
-}: PaymentMethodSelectProps) {
-  const paymentMethods = [
-    {
-      value: "COD",
-      label: "Thanh toán khi nhận hàng",
-      description: "Trả tiền mặt khi nhận được hàng"
-    },
-    {
-      value: "BANKING",
-      label: "Chuyển khoản ngân hàng",
-      description: "Chuyển khoản qua tài khoản ngân hàng hoặc quét mã QR"
-    }
+export default function PaymentMethodSelect({ paymentMethod, setPaymentMethod }: PaymentMethodSelectProps) {
+  const methods = [
+    { value: "COD", label: "Thanh toán khi nhận hàng", desc: "Trả tiền mặt khi nhận hàng", icon: "💵" },
+    { value: "BANKING", label: "Chuyển khoản ngân hàng", desc: "Chuyển khoản hoặc quét mã QR", icon: "🏦" },
   ];
 
   return (
-    <div className="mb-6">
-      <div className="flex items-center gap-3 mb-4">
-        <label className="font-semibold text-gray-700 text-lg">Phương thức thanh toán</label>
-      </div>
-      
-      <div className="space-y-3">
-        {paymentMethods.map((method) => (
-          <div
-            key={method.value}
-            className={`relative p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
-              paymentMethod === method.value
-                ? 'border-blue-500 bg-blue-50 shadow-md'
-                : 'border-gray-300 bg-white hover:border-gray-400 hover:shadow-sm'
-            }`}
-            onClick={() => setPaymentMethod(method.value)}
-          >
-            <div className="flex items-start gap-3">
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
-                paymentMethod === method.value
-                  ? 'border-blue-500 bg-blue-500'
-                  : 'border-gray-400'
-              }`}>
-                {paymentMethod === method.value && (
-                  <div className="w-2 h-2 rounded-full bg-white"></div>
-                )}
+    <div>
+      <h3 className="text-sm font-bold text-gray-800 mb-3">Phương thức thanh toán</h3>
+      <div className="space-y-2.5">
+        {methods.map(m => {
+          const active = paymentMethod === m.value;
+          return (
+            <div key={m.value} onClick={() => setPaymentMethod(m.value)}
+              className="flex items-center gap-3.5 p-4 rounded-xl cursor-pointer transition-all duration-200 border-2"
+              style={{
+                background: active ? '#f8f6f3' : 'white',
+                borderColor: active ? '#C9A96E' : '#f0f0f0',
+              }}>
+              <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ border: `2px solid ${active ? '#C9A96E' : '#d1d5db'}`, background: active ? '#C9A96E' : 'transparent' }}>
+                {active && <div className="w-2 h-2 rounded-full bg-white"></div>}
               </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <span className={`font-semibold ${
-                    paymentMethod === method.value ? 'text-blue-600' : 'text-gray-800'
-                  }`}>
-                    {method.label}
-                  </span>
-                  {paymentMethod === method.value && (
-                    <span className="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-medium">
-                      Đã chọn
-                    </span>
-                  )}
-                </div>
-                <p className="text-gray-600 text-sm mt-1">
-                  {method.description}
-                </p>
+              <span className="text-xl">{m.icon}</span>
+              <div>
+                <p className={`text-sm font-semibold ${active ? 'text-gray-900' : 'text-gray-600'}`}>{m.label}</p>
+                <p className="text-xs text-gray-400 mt-0.5">{m.desc}</p>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
-
-      <p className="text-gray-500 text-sm mt-3">
-        Lựa chọn phương thức thanh toán phù hợp với bạn
-      </p>
     </div>
   );
 }
