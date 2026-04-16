@@ -54,6 +54,7 @@ public class SecurityConfig {
                         .requestMatchers("/categories/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
                         .requestMatchers("/api/cart/**").permitAll()
+                        .requestMatchers("/api/coupons/**").permitAll()
                         .requestMatchers("/api/sepay/**").permitAll() // SEPAY webhook không cần authentication
 
                         // ORDER APIs (user + admin)

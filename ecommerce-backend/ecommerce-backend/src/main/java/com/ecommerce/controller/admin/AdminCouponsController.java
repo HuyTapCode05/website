@@ -56,6 +56,7 @@ public class AdminCouponsController {
         c.setStartAt(updated.getStartAt());
         c.setEndAt(updated.getEndAt());
         c.setActive(updated.getActive());
+        c.setTargetRole(updated.getTargetRole());
 
         return couponRepository.save(c);
     }

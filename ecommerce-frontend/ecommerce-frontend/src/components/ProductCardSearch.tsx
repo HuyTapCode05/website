@@ -29,6 +29,15 @@ export default function ProductCardSearch({ product }: ProductCardSearchProps) {
 
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-500"></div>
 
+        {/* HẾT HÀNG Overlay */}
+        {product.stock != null && product.stock <= 0 && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+            <span className="bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider shadow-lg">
+              Hết hàng
+            </span>
+          </div>
+        )}
+
         {/* Sale Badge */}
         {product.salePrice && discountPercent > 0 && (
           <div className="absolute top-2.5 left-2.5">

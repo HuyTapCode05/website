@@ -18,8 +18,9 @@ export default function AdminHeader({ title = "Quản trị Admin" }: AdminHeade
     { to: "/admin", label: "Dashboard", icon: "📊" },
     { to: "/admin/products", label: "Sản phẩm", icon: "👕" },
     { to: "/admin/categories", label: "Danh mục", icon: "📂" },
+    { to: "/admin/inventory", label: "Tồn kho", icon: "📦" },
     { to: "/admin/coupons", label: "Mã giảm giá", icon: "🎟️" },
-    { to: "/admin/orders", label: "Đơn hàng", icon: "📦" },
+    { to: "/admin/orders", label: "Đơn hàng", icon: "🛒" },
   ];
 
   return (

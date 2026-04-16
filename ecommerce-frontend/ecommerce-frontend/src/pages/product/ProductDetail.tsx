@@ -55,7 +55,7 @@ export default function ProductDetailPage() {
   const originalPrice = selectedVariant?.price || product?.price || 0;
   const hasDiscount = product ? (selectedVariant ? (selectedVariant.salePrice && selectedVariant.salePrice < selectedVariant.price) : (product.salePrice && product.salePrice < product.price)) : false;
   const discountPercent = hasDiscount ? Math.round((1 - displayPrice / originalPrice) * 100) : 0;
-  const stockCount = selectedVariant?.stock;
+  const stockCount = selectedVariant?.stock ?? product?.stock;
 
   const addToCart = async () => {
     if (!product || adding) return;
@@ -75,8 +75,9 @@ export default function ProductDetailPage() {
       }));
     } catch (err: any) {
       console.log(err);
+      const msg = err.response?.data?.error || err.response?.data?.message || "Lỗi khi thêm vào giỏ hàng!";
       window.dispatchEvent(new CustomEvent("cartNotification", {
-        detail: { message: "Lỗi khi thêm vào giỏ hàng!", type: "error" },
+        detail: { message: typeof msg === 'string' ? msg : "Lỗi khi thêm vào giỏ hàng!", type: "error" },
       }));
     } finally {
       setAdding(false);

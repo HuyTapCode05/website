@@ -10,6 +10,7 @@ import com.ecommerce.repository.*;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,6 +29,7 @@ public class CheckoutService {
     private final UserRepository userRepository;
     private final ProductRepository productRepository;
 
+    @Transactional
     public Order checkout(Long userId, String sessionId, CheckoutRequest req) {
 
         CartResponse cart = cartService.getCart(sessionId);
@@ -74,6 +76,19 @@ public class CheckoutService {
                 throw new RuntimeException("Không đủ điều kiện áp dụng mã");
             }
 
+            // CHECK TARGET ROLE
+            if (coupon.getTargetRole() != null && !coupon.getTargetRole().isBlank()
+                    && !"ALL".equalsIgnoreCase(coupon.getTargetRole())) {
+                if (userId != null) {
+                    User user = userRepository.findById(userId).orElse(null);
+                    if (user == null || !coupon.getTargetRole().equalsIgnoreCase(user.getRole())) {
+                        throw new RuntimeException("Mã giảm giá này không dành cho bạn");
+                    }
+                } else {
+                    throw new RuntimeException("Bạn cần đăng nhập để dùng mã này");
+                }
+            }
+
             // =====================================================
             // APPLY DISCOUNT
             // =====================================================
@@ -92,6 +107,26 @@ public class CheckoutService {
             }
         }
 
+        // =====================================================
+        // CHECK STOCK TRƯỚC KHI TẠO ĐƠN
+        // =====================================================
+        for (CartItemResponse ci : cart.getItems()) {
+            Product product = productRepository.findByIdWithVariants(ci.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Sản phẩm không tồn tại: " + ci.getProductId()));
+
+            if (ci.getVariantId() != null) {
+                // Check variant stock
+                ProductVariant variant = product.getVariants().stream()
+                        .filter(v -> v.getId().equals(ci.getVariantId()))
+                        .findFirst().orElse(null);
+                if (variant != null && variant.getStock() < ci.getQuantity()) {
+                    throw new RuntimeException("Sản phẩm \"" + product.getName() + "\" (" + variant.getSize() + "/" + variant.getColor() + ") chỉ còn " + variant.getStock() + " sản phẩm");
+                }
+            } else if (product.getStock() != null && product.getStock() < ci.getQuantity()) {
+                throw new RuntimeException("Sản phẩm \"" + product.getName() + "\" chỉ còn " + product.getStock() + " sản phẩm trong kho");
+            }
+        }
+
         BigDecimal finalAmount = total.subtract(discount);
 
         String orderNo = "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -105,26 +140,53 @@ public class CheckoutService {
                 .paymentMethod(req.getPaymentMethod())
                 .orderStatus(OrderStatus.PENDING)
                 .createdAt(LocalDateTime.now())
-                .couponCode(req.getCouponCode()) // FIELD ĐÃ TỒN TẠI
+                .couponCode(req.getCouponCode())
                 .build();
 
         order = orderRepository.save(order);
 
-        // Save order items
+        // Save order items + TRỪ STOCK
         for (CartItemResponse ci : cart.getItems()) {
 
-            Product product = productRepository.findById(ci.getProductId())
+            Product product = productRepository.findByIdWithVariants(ci.getProductId())
                     .orElseThrow(() -> new RuntimeException("Product not found"));
+
+            // Tìm variant object
+            ProductVariant selectedVariant = null;
+            if (ci.getVariantId() != null && product.getVariants() != null) {
+                for (ProductVariant v : product.getVariants()) {
+                    if (v.getId().equals(ci.getVariantId())) {
+                        selectedVariant = v;
+                        break;
+                    }
+                }
+            }
 
             orderItemRepository.save(
                     OrderItem.builder()
                             .order(order)
                             .product(product)
+                            .variant(selectedVariant)
                             .price(ci.getPrice())
                             .quantity(ci.getQuantity())
                             .subtotal(ci.getPrice().multiply(BigDecimal.valueOf(ci.getQuantity())))
                             .build()
             );
+
+            // ===== TRỪ STOCK =====
+            if (selectedVariant != null) {
+                // Trừ stock CHỈ variant đã chọn
+                int before = selectedVariant.getStock();
+                selectedVariant.setStock(Math.max(0, before - ci.getQuantity()));
+                System.out.println("✅ VARIANT STOCK: [" + selectedVariant.getSize() + "/" + selectedVariant.getColor() + "] " + before + " → " + selectedVariant.getStock());
+            }
+            // Luôn trừ product stock tổng
+            int before = product.getStock() != null ? product.getStock() : 0;
+            int after = Math.max(0, before - ci.getQuantity());
+            product.setStock(after);
+            System.out.println("✅ PRODUCT STOCK: [" + product.getName() + "] " + before + " → " + after);
+
+            productRepository.saveAndFlush(product);
         }
 
         // Save history

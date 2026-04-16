@@ -8,6 +8,16 @@ export default function CouponList({ coupons, deleteCoupon }: any) {
     return map[type] || { bg: "rgba(107,114,128,0.15)", color: "#6B7280", label: type };
   };
 
+  const getRoleBadge = (role: string | null) => {
+    const map: Record<string, { bg: string; color: string; label: string }> = {
+      ALL: { bg: "rgba(201,169,110,0.15)", color: "#C9A96E", label: "Tất cả" },
+      ROLE_USER: { bg: "rgba(59,130,246,0.15)", color: "#3B82F6", label: "Khách hàng" },
+      ROLE_VIP: { bg: "rgba(251,191,36,0.15)", color: "#FBBF24", label: "VIP" },
+      ROLE_ADMIN: { bg: "rgba(239,68,68,0.15)", color: "#EF4444", label: "Admin" },
+    };
+    return map[role || "ALL"] || map["ALL"];
+  };
+
   const getValueDisplay = (c: any) => {
     if (c.type === "PERCENT") return `${c.value}%`;
     if (c.type === "FIXED") return `${c.value.toLocaleString()}đ`;
@@ -39,6 +49,7 @@ export default function CouponList({ coupons, deleteCoupon }: any) {
             <th className="text-left px-4 py-3 font-medium" style={{ color: "#6B7280" }}>Mã</th>
             <th className="text-left px-4 py-3 font-medium" style={{ color: "#6B7280" }}>Loại</th>
             <th className="text-left px-4 py-3 font-medium" style={{ color: "#6B7280" }}>Giá trị</th>
+            <th className="text-left px-4 py-3 font-medium" style={{ color: "#6B7280" }}>Đối tượng</th>
             <th className="text-left px-4 py-3 font-medium hidden md:table-cell" style={{ color: "#6B7280" }}>Đơn tối thiểu</th>
             <th className="text-left px-4 py-3 font-medium hidden lg:table-cell" style={{ color: "#6B7280" }}>Sử dụng</th>
             <th className="text-left px-4 py-3 font-medium hidden lg:table-cell" style={{ color: "#6B7280" }}>Hiệu lực</th>
@@ -49,6 +60,7 @@ export default function CouponList({ coupons, deleteCoupon }: any) {
         <tbody>
           {coupons.map((c: any) => {
             const ts = getTypeStyle(c.type);
+            const rb = getRoleBadge(c.targetRole);
             const active = isCouponActive(c);
             return (
               <tr key={c.id} style={{ borderBottom: "1px solid rgba(31,41,55,0.5)" }}
@@ -62,6 +74,11 @@ export default function CouponList({ coupons, deleteCoupon }: any) {
                   </span>
                 </td>
                 <td className="px-4 py-3.5 font-bold" style={{ color: "#C9A96E" }}>{getValueDisplay(c)}</td>
+                <td className="px-4 py-3.5">
+                  <span className="text-xs font-semibold px-2 py-1 rounded-full" style={{ background: rb.bg, color: rb.color }}>
+                    {rb.label}
+                  </span>
+                </td>
                 <td className="px-4 py-3.5 hidden md:table-cell" style={{ color: "#D1D5DB" }}>
                   {c.minimumOrderAmount ? `${c.minimumOrderAmount.toLocaleString()}đ` : "—"}
                 </td>

@@ -14,6 +14,7 @@ export function useAdminProducts() {
     description: "",
     categoryId: "",
     imageUrl: "",
+    stock: "",
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -59,7 +60,11 @@ export function useAdminProducts() {
         imageUrl = await uploadImage();
       }
 
-      const body = { ...product, imageUrl };
+      const body = {
+        ...product,
+        imageUrl,
+        stock: product.stock !== "" ? parseInt(String(product.stock)) : null,
+      };
 
       if (product.id) {
         await api.put(`/products/admin/${product.id}`, body);
@@ -100,6 +105,7 @@ const deleteProduct = async (id: number) => {
       description: p.description,
       categoryId: p.categoryId,
       imageUrl: p.imageUrl,
+      stock: p.stock ?? "",
     });
     setImageFile(null);
   };
@@ -114,6 +120,7 @@ const deleteProduct = async (id: number) => {
       description: "",
       categoryId: "",
       imageUrl: "",
+      stock: "",
     });
     setImageFile(null);
   };

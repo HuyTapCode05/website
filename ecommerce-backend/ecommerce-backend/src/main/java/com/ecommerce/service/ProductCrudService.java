@@ -41,6 +41,7 @@ public class ProductCrudService {
                 .salePrice(req.getSalePrice())
                 .imageUrl(req.getImageUrl())
                 .category(category)
+                .stock(req.getStock() != null ? req.getStock() : 0)
                 .status(ProductStatus.ACTIVE)
                 .build();
 
@@ -82,6 +83,9 @@ public ProductResponse update(Long id, ProductRequest req) {
 
     if (req.getActive() != null)
         p.setStatus(req.getActive() ? ProductStatus.ACTIVE : ProductStatus.ARCHIVED);
+
+    if (req.getStock() != null)
+        p.setStock(req.getStock());
 
     p = productRepository.save(p);
 
@@ -155,6 +159,7 @@ public ProductResponse update(Long id, ProductRequest req) {
                 .categoryId(p.getCategory() != null ? p.getCategory().getId() : null)
                 .categoryName(p.getCategory() != null ? p.getCategory().getName() : null)
                 .active(p.getStatus() == ProductStatus.ACTIVE)
+                .stock(p.getStock())
                 .build();
     }
 

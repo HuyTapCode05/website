@@ -28,6 +28,9 @@ public class Coupon {
 
     private Boolean active;
 
+    // Phân quyền: mã dành cho ai? (null hoặc "ALL" = tất cả, "ROLE_USER", "ROLE_VIP", "ROLE_ADMIN")
+    private String targetRole;
+
     private LocalDateTime startAt;
     private LocalDateTime endAt;
 }

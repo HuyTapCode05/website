@@ -4,11 +4,14 @@ import com.ecommerce.config.NotificationConfig;
 import com.ecommerce.model.Notification;
 import com.ecommerce.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.mail.internet.MimeMessage;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +42,7 @@ public class NotificationService {
             
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(htmlContent, true); // true = HTML content
+            helper.setText(htmlContent, true); 
 
             mailSender.send(message);
             System.out.println("📩 Email đã gửi: " + to);
@@ -71,6 +74,18 @@ public class NotificationService {
     }
 
     // ===========================
+    // Đọc template HTML từ file
+    // ===========================
+    private String loadTemplate(String templateName) {
+        try {
+            ClassPathResource resource = new ClassPathResource("templates/email/" + templateName);
+            return new String(resource.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new RuntimeException("Không thể đọc email template: " + templateName, e);
+        }
+    }
+
+    // ===========================
     // Email Templates
     // ===========================
     
@@ -81,129 +96,24 @@ public class NotificationService {
         java.math.BigDecimal total = order.getTotalAmount()
                 .add(order.getShippingFee() != null ? order.getShippingFee() : java.math.BigDecimal.ZERO)
                 .subtract(order.getDiscountAmount() != null ? order.getDiscountAmount() : java.math.BigDecimal.ZERO);
-        
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-                    .order-info { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-                    .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #eee; }
-                    .info-row:last-child { border-bottom: none; }
-                    .label { font-weight: bold; color: #666; }
-                    .value { color: #333; }
-                    .total { font-size: 20px; font-weight: bold; color: #e74c3c; }
-                    .button { display: inline-block; padding: 12px 30px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; margin-top: 20px; }
-                    .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>🎉 Đặt hàng thành công!</h1>
-                        <p>Cảm ơn bạn đã mua sắm tại cửa hàng của chúng tôi</p>
-                    </div>
-                    <div class="content">
-                        <h2>Thông tin đơn hàng</h2>
-                        <div class="order-info">
-                            <div class="info-row">
-                                <span class="label">Mã đơn hàng:</span>
-                                <span class="value"><strong>#%s</strong></span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Ngày đặt:</span>
-                                <span class="value">%s</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Phương thức thanh toán:</span>
-                                <span class="value">%s</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Tổng tiền hàng:</span>
-                                <span class="value">%s₫</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Phí vận chuyển:</span>
-                                <span class="value">%s₫</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">Giảm giá:</span>
-                                <span class="value">-%s₫</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label total">Tổng thanh toán:</span>
-                                <span class="value total">%s₫</span>
-                            </div>
-                        </div>
-                        <div style="text-align: center;">
-                            <a href="#" class="button">Xem chi tiết đơn hàng</a>
-                        </div>
-                        <p style="margin-top: 30px; color: #666;">
-                            Chúng tôi sẽ xử lý đơn hàng của bạn trong thời gian sớm nhất. 
-                            Bạn sẽ nhận được thông báo khi đơn hàng được cập nhật.
-                        </p>
-                    </div>
-                    <div class="footer">
-                        <p>© 2026 Cửa hàng của chúng tôi. Tất cả quyền được bảo lưu.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """.formatted(
-                orderNo,
-                order.getCreatedAt().toString(),
-                getPaymentMethodLabel(order.getPaymentMethod()),
-                order.getTotalAmount().toPlainString(),
-                order.getShippingFee() != null ? order.getShippingFee().toPlainString() : "0",
-                order.getDiscountAmount() != null ? order.getDiscountAmount().toPlainString() : "0",
-                total.toPlainString()
-            );
+
+        return loadTemplate("order-confirmation.html")
+                .replace("{{orderNo}}", orderNo)
+                .replace("{{createdAt}}", order.getCreatedAt().toString())
+                .replace("{{paymentMethod}}", getPaymentMethodLabel(order.getPaymentMethod()))
+                .replace("{{totalAmount}}", order.getTotalAmount().toPlainString())
+                .replace("{{shippingFee}}", order.getShippingFee() != null ? order.getShippingFee().toPlainString() : "0")
+                .replace("{{discount}}", order.getDiscountAmount() != null ? order.getDiscountAmount().toPlainString() : "0")
+                .replace("{{finalTotal}}", total.toPlainString());
     }
 
     /**
      * Template email hủy đơn hàng
      */
     public String buildOrderCancellationEmail(String orderNo, String reason) {
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #f093fb 0%%, #f5576c 100%%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-                    .info-box { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #f5576c; }
-                    .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>⚠️ Đơn hàng đã bị hủy</h1>
-                    </div>
-                    <div class="content">
-                        <p>Xin chào,</p>
-                        <p>Đơn hàng <strong>#%s</strong> của bạn đã được hủy.</p>
-                        <div class="info-box">
-                            <p><strong>Lý do hủy:</strong></p>
-                            <p>%s</p>
-                        </div>
-                        <p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
-                    </div>
-                    <div class="footer">
-                        <p>© 2026 Cửa hàng của chúng tôi. Tất cả quyền được bảo lưu.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """.formatted(orderNo, reason != null && !reason.isBlank() ? reason : "Không có lý do");
+        return loadTemplate("order-cancellation.html")
+                .replace("{{orderNo}}", orderNo)
+                .replace("{{reason}}", reason != null && !reason.isBlank() ? reason : "Không có lý do");
     }
 
     /**
@@ -217,43 +127,12 @@ public class NotificationService {
             case "REFUNDED" -> "#3498db";
             default -> "#95a5a6";
         };
-        
-        return """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-                    .header { background: linear-gradient(135deg, #667eea 0%%, #764ba2 100%%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
-                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
-                    .status-badge { display: inline-block; padding: 10px 20px; background: %s; color: white; border-radius: 20px; font-weight: bold; margin: 20px 0; }
-                    .footer { text-align: center; color: #999; font-size: 12px; margin-top: 30px; }
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <div class="header">
-                        <h1>📦 Cập nhật đơn hàng</h1>
-                    </div>
-                    <div class="content">
-                        <p>Xin chào,</p>
-                        <p>Đơn hàng <strong>#%s</strong> của bạn đã được cập nhật:</p>
-                        <div style="text-align: center;">
-                            <span class="status-badge">%s</span>
-                        </div>
-                        <p style="background: white; padding: 15px; border-radius: 8px; margin-top: 20px;">
-                            %s
-                        </p>
-                    </div>
-                    <div class="footer">
-                        <p>© 2026 Cửa hàng của chúng tôi. Tất cả quyền được bảo lưu.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """.formatted(statusColor, orderNo, getStatusLabel(status), message);
+
+        return loadTemplate("order-update.html")
+                .replace("{{statusColor}}", statusColor)
+                .replace("{{orderNo}}", orderNo)
+                .replace("{{statusLabel}}", getStatusLabel(status))
+                .replace("{{message}}", message);
     }
 
     private String getPaymentMethodLabel(String method) {

@@ -49,6 +49,18 @@ export default function ProductForm({
         </div>
       </div>
 
+      {/* Stock */}
+      <div>
+        <label className="block text-xs font-medium uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Tồn kho</label>
+        <input value={product.stock} type="number" placeholder="0"
+          className="w-full p-3 rounded-lg text-sm text-white placeholder-gray-600 outline-none transition-all"
+          style={{ background: "#0D1117", border: "1px solid #1F2937" }}
+          onFocus={e => e.target.style.borderColor = "#C9A96E"}
+          onBlur={e => e.target.style.borderColor = "#1F2937"}
+          onChange={e => setProduct({ ...product, stock: e.target.value })}
+        />
+      </div>
+
       {/* Description */}
       <div>
         <label className="block text-xs font-medium uppercase tracking-wider mb-2" style={{ color: "#9CA3AF" }}>Mô tả</label>

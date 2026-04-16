@@ -21,6 +21,7 @@ import AdminProducts from "./pages/admin/AdminProducts";
 import AdminCoupons from "./pages/admin/AdminCoupons";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminInventory from "./pages/admin/AdminInventory";
 
 // COMPONENTS
 import { ToastContainer } from "./components/Toast";
@@ -50,6 +51,7 @@ function App() {
           <Route path="/admin/categories" element={<AdminCategories />} />
           <Route path="/admin/products" element={<AdminProducts />} />
           <Route path="/admin/coupons" element={<AdminCoupons />} />
+          <Route path="/admin/inventory" element={<AdminInventory />} />
           <Route path="/admin/orders" element={<AdminOrders />} />
           {/* Allow login in case admin logs out */}
           <Route path="/login" element={<Login />} />

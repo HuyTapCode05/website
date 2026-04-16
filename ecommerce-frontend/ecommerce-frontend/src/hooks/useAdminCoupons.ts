@@ -11,6 +11,7 @@ export function useAdminCoupons() {
     value: 0,
     minimumOrderAmount: 0,
     usageLimit: 0,
+    targetRole: "ALL",
     startAt: "",
     endAt: ""
   });
@@ -42,6 +43,7 @@ export function useAdminCoupons() {
         value: 0,
         minimumOrderAmount: 0,
         usageLimit: 0,
+        targetRole: "ALL",
         startAt: "",
         endAt: ""
       });

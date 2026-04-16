@@ -13,6 +13,7 @@ import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -73,8 +74,63 @@ public class CartService {
         Product p = productRepo.findById(req.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        var exist = cartItemRepo.findByCartIdAndProductId(cart.getId(), req.getProductId());
+        // ===== Tìm variant nếu có =====
+        ProductVariant variant = null;
+        if (req.getVariantId() != null) {
+            variant = p.getVariants() != null
+                    ? p.getVariants().stream()
+                        .filter(v -> v.getId().equals(req.getVariantId()))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("Variant not found"))
+                    : null;
+        }
 
+        // ===== Tìm item đã tồn tại trong giỏ (theo product + variant) =====
+        Optional<CartItem> exist;
+        if (variant != null) {
+            exist = cartItemRepo.findByCartIdAndProductIdAndVariantId(cart.getId(), req.getProductId(), variant.getId());
+        } else {
+            exist = cartItemRepo.findByCartIdAndProductIdAndVariantIsNull(cart.getId(), req.getProductId());
+        }
+
+        // ===== CHECK STOCK =====
+        if (variant != null) {
+            // Check variant stock
+            int currentStock = variant.getStock();
+            if (currentStock <= 0) {
+                String label = variant.getSize() + " / " + variant.getColor();
+                throw new RuntimeException("Sản phẩm \"" + p.getName() + "\" (" + label + ") đã hết hàng");
+            }
+            int totalQty = req.getQuantity();
+            if (exist.isPresent()) totalQty += exist.get().getQuantity();
+            if (totalQty > currentStock) {
+                String label = variant.getSize() + " / " + variant.getColor();
+                throw new RuntimeException("Sản phẩm \"" + p.getName() + "\" (" + label + ") chỉ còn " + currentStock + " sản phẩm");
+            }
+        } else if (p.getStock() != null) {
+            // Check product stock
+            int currentStock = p.getStock();
+            if (currentStock <= 0) {
+                throw new RuntimeException("Sản phẩm \"" + p.getName() + "\" đã hết hàng");
+            }
+            int totalQty = req.getQuantity();
+            if (exist.isPresent()) totalQty += exist.get().getQuantity();
+            if (totalQty > currentStock) {
+                throw new RuntimeException("Sản phẩm \"" + p.getName() + "\" chỉ còn " + currentStock + " sản phẩm");
+            }
+        }
+
+        // ===== Xác định giá =====
+        BigDecimal price;
+        if (variant != null && variant.getSalePrice() != null) {
+            price = variant.getSalePrice();
+        } else if (variant != null && variant.getPrice() != null) {
+            price = variant.getPrice();
+        } else {
+            price = p.getSalePrice() != null ? p.getSalePrice() : p.getPrice();
+        }
+
+        // ===== Lưu vào giỏ =====
         if (exist.isPresent()) {
             CartItem item = exist.get();
             item.setQuantity(item.getQuantity() + req.getQuantity());
@@ -84,7 +140,8 @@ public class CartService {
                     CartItem.builder()
                             .cart(cart)
                             .product(p)
-                            .price(p.getSalePrice() != null ? p.getSalePrice() : p.getPrice())
+                            .variant(variant)
+                            .price(price)
                             .quantity(req.getQuantity())
                             .build()
             );
@@ -104,6 +161,17 @@ public class CartService {
                 .orElseThrow(() -> new RuntimeException("Item not found"));
 
         if ("inc".equals(action)) {
+            // ===== CHECK STOCK KHI TĂNG SỐ LƯỢNG =====
+            Product p = item.getProduct();
+            if (p.getStock() != null) {
+                int newQty = item.getQuantity() + 1;
+                if (p.getStock() <= 0) {
+                    throw new RuntimeException("Sản phẩm \"" + p.getName() + "\" đã hết hàng");
+                }
+                if (newQty > p.getStock()) {
+                    throw new RuntimeException("Sản phẩm \"" + p.getName() + "\" chỉ còn " + p.getStock() + " sản phẩm trong kho");
+                }
+            }
             item.setQuantity(item.getQuantity() + 1);
         } else if ("dec".equals(action) && item.getQuantity() > 1) {
             item.setQuantity(item.getQuantity() - 1);
@@ -249,6 +317,24 @@ public void clearCart(String sessionId) {
             d.setImageUrl(i.getProduct().getImageUrl());
             d.setPrice(i.getPrice());
             d.setQuantity(i.getQuantity());
+
+            // Variant info
+            if (i.getVariant() != null) {
+                d.setVariantId(i.getVariant().getId());
+                String label = "";
+                if (i.getVariant().getSize() != null) label += i.getVariant().getSize();
+                if (i.getVariant().getColor() != null) label += (label.isEmpty() ? "" : " / ") + i.getVariant().getColor();
+                d.setVariantLabel(label);
+                // Variant stock
+                d.setStock(i.getVariant().getStock());
+                d.setOutOfStock(i.getVariant().getStock() <= 0);
+            } else {
+                // Product stock
+                Integer productStock = i.getProduct().getStock();
+                d.setStock(productStock);
+                d.setOutOfStock(productStock != null && productStock <= 0);
+            }
+
             return d;
         }).collect(Collectors.toList()));
 

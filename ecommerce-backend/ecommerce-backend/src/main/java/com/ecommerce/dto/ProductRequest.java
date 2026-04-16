@@ -18,4 +18,6 @@ public class ProductRequest {
     private String imageUrl;
 
     private Boolean active;
+
+    private Integer stock;
 }

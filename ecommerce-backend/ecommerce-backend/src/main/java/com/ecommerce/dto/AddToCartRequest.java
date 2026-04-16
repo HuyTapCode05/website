@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 public class AddToCartRequest {
 
     private Long productId;
+    private Long variantId;   // null nếu sản phẩm không có variant
     private Integer quantity;
 }

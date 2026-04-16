@@ -2,10 +2,13 @@ package com.ecommerce.service;
 
 import com.ecommerce.enums.OrderStatus;
 import com.ecommerce.model.Order;
+import com.ecommerce.model.OrderItem;
 import com.ecommerce.model.OrderStatusHistory;
 import com.ecommerce.model.User;
+import com.ecommerce.repository.OrderItemRepository;
 import com.ecommerce.repository.OrderRepository;
 import com.ecommerce.repository.OrderStatusHistoryRepository;
+import com.ecommerce.repository.ProductRepository;
 import com.ecommerce.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -18,9 +21,11 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final OrderItemRepository orderItemRepository;
     private final OrderStatusHistoryRepository historyRepository;
     private final NotificationService notificationService;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
 
     // ======================
     // LẤY DANH SÁCH ĐƠN HÀNG
@@ -88,6 +93,27 @@ public class OrderService {
                 .build();
 
         historyRepository.save(history);
+
+        // ================================
+        // HOÀN LẠI STOCK KHI HỦY ĐƠN
+        // ================================
+        java.util.List<OrderItem> orderItems = orderItemRepository.findByOrderId(orderId);
+        for (OrderItem item : orderItems) {
+            if (item.getProduct() != null) {
+                var product = item.getProduct();
+                // Hoàn stock cho Product
+                int currentStock = product.getStock() != null ? product.getStock() : 0;
+                product.setStock(currentStock + item.getQuantity());
+
+                // Hoàn stock cho variant cụ thể
+                if (item.getVariant() != null) {
+                    var variant = item.getVariant();
+                    variant.setStock(variant.getStock() + item.getQuantity());
+                }
+
+                productRepository.save(product);
+            }
+        }
 
         // ================================
         // GỬI THÔNG BÁO TIẾNG VIỆT

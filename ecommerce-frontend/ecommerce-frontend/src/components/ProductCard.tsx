@@ -31,10 +31,11 @@ export default function ProductCard({ p, sessionId, userId }: ProductCardProps) 
       window.dispatchEvent(new CustomEvent("cartNotification", {
         detail: { message: "Đã thêm vào giỏ hàng!", type: "success" },
       }));
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
+      const msg = err.response?.data?.error || err.response?.data?.message || "Lỗi khi thêm vào giỏ hàng!";
       window.dispatchEvent(new CustomEvent("cartNotification", {
-        detail: { message: "Lỗi khi thêm vào giỏ hàng!", type: "error" },
+        detail: { message: typeof msg === 'string' ? msg : "Lỗi khi thêm vào giỏ hàng!", type: "error" },
       }));
     } finally {
       setIsAdding(false);
@@ -63,6 +64,15 @@ export default function ProductCard({ p, sessionId, userId }: ProductCardProps) 
         {/* Overlay on hover */}
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-500"></div>
 
+        {/* HẾT HÀNG Overlay */}
+        {p.stock != null && p.stock <= 0 && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
+            <span className="bg-red-600 text-white text-xs font-bold px-4 py-2 rounded-full uppercase tracking-wider shadow-lg">
+              Hết hàng
+            </span>
+          </div>
+        )}
+
         {/* Sale Badge */}
         {p.salePrice && discountPercent > 0 && (
           <div className="absolute top-2.5 left-2.5">
@@ -81,7 +91,8 @@ export default function ProductCard({ p, sessionId, userId }: ProductCardProps) 
           </div>
         )}
 
-        {/* Quick Add Button — appears on hover */}
+        {/* Quick Add Button — appears on hover (only if in stock) */}
+        {(p.stock == null || p.stock > 0) && (
         <div className="absolute bottom-0 left-0 right-0 p-3 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
           <button
             onClick={addToCart}
@@ -115,6 +126,7 @@ export default function ProductCard({ p, sessionId, userId }: ProductCardProps) 
             )}
           </button>
         </div>
+        )}
       </div>
 
       {/* Info */}

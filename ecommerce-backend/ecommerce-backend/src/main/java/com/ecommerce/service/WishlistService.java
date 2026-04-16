@@ -60,15 +60,14 @@ public class WishlistService {
 
         // ================================
         // Với backend mới:
-        //  - CartService đọc userId từ JWT
-        //  - FE KHÔNG gửi userId nữa
-        //  - sessionId chỉ dùng cho guest
+        // - CartService đọc userId từ JWT
+        // - FE KHÔNG gửi userId nữa
+        // - sessionId chỉ dùng cho guest
         // ================================
 
         cartService.addToCart(
                 null, // ❗ Không cần sessionId vì user đang login
-                new AddToCartRequest(productId, 1)
-        );
+                new AddToCartRequest(productId, null, 1));
 
         // Xóa khỏi wishlist
         wishlistRepository.deleteByUserIdAndProductId(userId, productId);

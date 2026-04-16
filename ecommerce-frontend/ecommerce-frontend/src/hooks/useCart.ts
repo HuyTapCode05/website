@@ -39,8 +39,12 @@ export function useCart() {
         { params: getCartParams() }
       );
       loadCart();
-    } catch (err) {
+    } catch (err: any) {
       console.log(err);
+      const msg = err.response?.data?.error || err.response?.data?.message || "Không thể cập nhật số lượng";
+      window.dispatchEvent(new CustomEvent("cartNotification", {
+        detail: { message: typeof msg === 'string' ? msg : "Không thể cập nhật số lượng", type: "error" },
+      }));
     }
   };
 

@@ -130,7 +130,7 @@ export const useCheckout = () => {
       navigate("/orders/" + res.data.order.id);
     } catch (err: any) {
       console.error("Checkout error:", err);
-      const errorMessage = err.response?.data?.message || err.message || "Lỗi khi đặt hàng!";
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || "Lỗi khi đặt hàng!";
       alert("❌ " + errorMessage);
     }
   };

@@ -19,6 +19,10 @@ public class CartItem {
     @ManyToOne
     private Product product;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "variant_id")
+    private ProductVariant variant;
+
     private BigDecimal price;
     private Integer quantity;
 }

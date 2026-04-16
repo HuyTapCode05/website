@@ -19,6 +19,7 @@ public class ProductDetailResponse {
 
     private String categoryName;
     private String imageUrl;
+    private Integer stock;
 
     private List<String> gallery;
     private List<VariantDto> variants;

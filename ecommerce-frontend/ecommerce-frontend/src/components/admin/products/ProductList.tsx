@@ -28,7 +28,7 @@ export default function ProductList({ products, editProduct, deleteProduct }: an
           {/* Info */}
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-medium text-white truncate">{p.name}</h3>
-            <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {p.salePrice && p.salePrice < p.price ? (
                 <>
                   <span className="text-xs font-bold" style={{ color: "#C9A96E" }}>{p.salePrice.toLocaleString()}đ</span>
@@ -40,6 +40,15 @@ export default function ProductList({ products, editProduct, deleteProduct }: an
               {p.categoryName && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ background: "rgba(201,169,110,0.1)", color: "#C9A96E" }}>
                   {p.categoryName}
+                </span>
+              )}
+              {/* Stock Badge */}
+              {p.stock != null && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded font-medium" style={{
+                  background: p.stock <= 0 ? "rgba(239,68,68,0.15)" : p.stock <= 10 ? "rgba(251,191,36,0.15)" : "rgba(34,197,94,0.15)",
+                  color: p.stock <= 0 ? "#EF4444" : p.stock <= 10 ? "#FBBF24" : "#22C55E"
+                }}>
+                  {p.stock <= 0 ? "Hết hàng" : p.stock <= 10 ? `Còn ${p.stock}` : `Kho: ${p.stock}`}
                 </span>
               )}
             </div>

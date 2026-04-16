@@ -21,7 +21,8 @@ public class ProductResponse {
     private String imageUrl;
     private Long categoryId;
     private String categoryName;
-    private Boolean active;   
+    private Boolean active;
+    private Integer stock;
     public static ProductResponse fromEntity(Product p) {
         ProductResponse dto = new ProductResponse();
 
@@ -38,6 +39,7 @@ public class ProductResponse {
 
         dto.setDescription(p.getDescription());
         dto.setImageUrl(p.getImageUrl());
+        dto.setStock(p.getStock());
 
         if (p.getCategory() != null) {
             dto.setCategoryId(p.getCategory().getId());

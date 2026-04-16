@@ -63,6 +63,7 @@ public class ProductService {
                 .price(p.getPrice())
                 .salePrice(p.getSalePrice())
                 .imageUrl(p.getImageUrl())
+                .stock(p.getStock())
                 .categoryName(
                         p.getCategory() != null ? p.getCategory().getName() : null
                 )

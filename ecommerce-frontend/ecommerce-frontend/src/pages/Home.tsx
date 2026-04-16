@@ -23,6 +23,19 @@ export default function Home() {
   const [cartCount, setCartCount] = useState(0);
   const [orderCount, setOrderCount] = useState(0);
   const [categories, setCategories] = useState<any[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [vouchers, setVouchers] = useState<any[]>([]);
+  const [savedCodes, setSavedCodes] = useState<Set<string>>(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem("savedVouchers") || "[]");
+      return new Set(stored);
+    } catch { return new Set(); }
+  });
+  const [toastCode, setToastCode] = useState<string | null>(null);
+
+  const filteredProducts = selectedCategory
+    ? allProducts.filter((p: any) => p.categoryId === selectedCategory || p.category?.id === selectedCategory)
+    : allProducts;
 
   const logout = () => {
     localStorage.clear();
@@ -62,11 +75,30 @@ export default function Home() {
     } catch { /* silent */ }
   };
 
+  const loadVouchers = async () => {
+    try {
+      const url = userId ? `/api/coupons/available?userId=${userId}` : "/api/coupons/available";
+      const res = await api.get(url);
+      setVouchers(Array.isArray(res.data) ? res.data : []);
+    } catch { /* silent */ }
+  };
+
+  const copyVoucher = (v: any) => {
+    navigator.clipboard.writeText(v.code);
+    const updated = new Set(savedCodes);
+    updated.add(v.code);
+    setSavedCodes(updated);
+    localStorage.setItem("savedVouchers", JSON.stringify([...updated]));
+    setToastCode(v.code);
+    setTimeout(() => setToastCode(null), 3000);
+  };
+
   useEffect(() => {
     loadHomeData();
     loadCartCount();
     loadOrderCount();
     loadCategories();
+    loadVouchers();
   }, []);
 
   const categoryIcons: Record<string, string> = {
@@ -127,12 +159,12 @@ export default function Home() {
               Khám phá xu hướng thời trang mới nhất với chất lượng vượt trội và giá cả hợp lý
             </p>
             <div className="flex flex-wrap gap-3">
-              <Link
-                to="/search"
+              <a
+                href="#all-products"
                 className="bg-white text-gray-900 px-6 py-3 rounded-lg font-semibold text-sm hover:bg-gray-100 transition-all shadow-lg btn-press"
               >
                 Khám phá ngay
-              </Link>
+              </a>
               <a
                 href="#sale"
                 className="border border-white/30 text-white px-6 py-3 rounded-lg font-semibold text-sm hover:bg-white/10 transition-all btn-press"
@@ -153,21 +185,120 @@ export default function Home() {
           <section className="py-10 animate-slide-up">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-lg font-bold text-gray-900 tracking-tight">Danh mục sản phẩm</h2>
-              <Link to="/search" className="text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium">
+              <a href="#all-products" className="text-sm text-gray-500 hover:text-gray-800 transition-colors font-medium">
                 Xem tất cả →
-              </Link>
+              </a>
             </div>
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
               {categories.slice(0, 6).map((cat: any) => (
-                <Link
+                <button
                   key={cat.id}
-                  to={`/search?categoryId=${cat.id}`}
-                  className="group flex flex-col items-center gap-2.5 p-4 rounded-xl bg-white border border-gray-100 hover:border-amber-200 hover:shadow-md transition-all card-hover"
+                  onClick={() => {
+                    setSelectedCategory(selectedCategory === cat.id ? null : cat.id);
+                    setTimeout(() => document.getElementById('all-products')?.scrollIntoView({ behavior: 'smooth' }), 100);
+                  }}
+                  className={`group flex flex-col items-center gap-2.5 p-4 rounded-xl border transition-all card-hover ${selectedCategory === cat.id
+                      ? 'bg-amber-50 border-amber-300 shadow-md'
+                      : 'bg-white border-gray-100 hover:border-amber-200 hover:shadow-md'
+                    }`}
                 >
                   <span className="text-2xl group-hover:animate-float">{getCategoryIcon(cat.name)}</span>
-                  <span className="text-xs font-medium text-gray-700 text-center line-clamp-1">{cat.name}</span>
-                </Link>
+                  <span className={`text-xs font-medium text-center line-clamp-1 ${selectedCategory === cat.id ? 'text-amber-700' : 'text-gray-700'}`}>{cat.name}</span>
+                </button>
               ))}
+            </div>
+          </section>
+        )}
+
+        {/* ============================== */}
+        {/* SHOPEE-STYLE VOUCHER BANNER */}
+        {/* ============================== */}
+        {vouchers.length > 0 && (
+          <section className="py-6">
+            <div className="rounded-xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #FFF7ED 0%, #FFFBEB 100%)', border: '1px solid #FDE68A' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: '1px solid #FDE68A' }}>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🎫</span>
+                  <h2 className="text-base font-bold" style={{ color: '#C2410C' }}>Mã Giảm Giá</h2>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm text-white" style={{ background: '#EF4444' }}>HOT</span>
+                </div>
+                <span className="text-xs font-medium" style={{ color: '#C2410C' }}>{vouchers.length} mã khả dụng</span>
+              </div>
+              {/* Voucher cards */}
+              <div className="flex gap-3 px-5 py-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+                {vouchers.map((v: any) => {
+                  const isPercent = v.type === 'PERCENT';
+                  const isFixed = v.type === 'FIXED';
+                  const isFreeShip = v.type === 'FREESHIP';
+                  const usedPct = v.usageLimit ? Math.round(((v.usedCount || 0) / v.usageLimit) * 100) : 0;
+                  const isSaved = savedCodes.has(v.code);
+                  return (
+                    <div key={v.id} className="flex-shrink-0 flex" style={{ width: '280px' }}>
+                      {/* Left ticket side */}
+                      <div className="w-24 flex-shrink-0 flex flex-col items-center justify-center relative rounded-l-lg"
+                        style={{ background: isFreeShip ? '#0891B2' : '#EE4D2D', color: 'white' }}>
+                        <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style={{ background: '#FFF7ED' }}></div>
+                        {isFreeShip ? (
+                          <>
+                            <span className="text-lg">🚚</span>
+                            <span className="text-[10px] font-bold mt-1">FREESHIP</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs font-medium opacity-80">Giảm</span>
+                            <span className="text-xl font-black leading-tight">{isPercent ? `${v.value}%` : `${Math.round(v.value/1000)}K`}</span>
+                          </>
+                        )}
+                      </div>
+                      {/* Right content side */}
+                      <div className="flex-1 bg-white rounded-r-lg border border-l-0 px-3 py-2.5 flex flex-col justify-between relative"
+                        style={{ borderColor: '#f3f4f6' }}>
+                        <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full" style={{ background: '#FFF7ED' }}></div>
+                        <div>
+                          <p className="text-[11px] font-black tracking-widest px-1.5 py-0.5 rounded inline-block mb-0.5"
+                            style={{ background: '#FFF7ED', color: '#C2410C', border: '1px dashed #FDBA74' }}>
+                            {v.code}
+                          </p>
+                          <p className="text-xs font-bold text-gray-800 leading-tight">
+                            {isPercent ? `Giảm ${v.value}%` : isFixed ? `Giảm ${v.value?.toLocaleString()}đ` : 'Miễn phí vận chuyển'}
+                          </p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">
+                            {v.minimumOrderAmount > 0 ? `Đơn tối thiểu ${v.minimumOrderAmount?.toLocaleString()}đ` : 'Không giới hạn'}
+                          </p>
+                        </div>
+                        <div className="mt-2">
+                          {v.usageLimit && (
+                            <div className="mb-1.5">
+                              <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#FEE2E2' }}>
+                                <div className="h-full rounded-full transition-all" style={{ width: `${usedPct}%`, background: '#EF4444' }}></div>
+                              </div>
+                              <p className="text-[9px] mt-0.5" style={{ color: usedPct > 70 ? '#EF4444' : '#9CA3AF' }}>
+                                {usedPct > 70 ? 'Sắp hết' : `Đã dùng ${usedPct}%`}
+                              </p>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-gray-400">
+                              HSD: {new Date(v.endAt).toLocaleDateString('vi-VN')}
+                            </span>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); copyVoucher(v); }}
+                              className="text-[11px] font-bold px-3 py-1 rounded transition-all"
+                              style={{
+                                background: isSaved ? '#DCFCE7' : (isFreeShip ? '#0891B2' : '#EE4D2D'),
+                                color: isSaved ? '#16A34A' : 'white',
+                              }}
+                            >
+                              {isSaved ? '✓ Đã lưu' : 'Lưu'}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </section>
         )}
@@ -228,20 +359,31 @@ export default function Home() {
         {/* ============================== */}
         {/* ALL PRODUCTS */}
         {/* ============================== */}
-        <section className="py-8 pb-16">
+        <section id="all-products" className="py-8 pb-16 scroll-mt-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-900 tracking-tight">Tất cả sản phẩm</h2>
-            <span className="text-sm text-gray-400">{allProducts.length} sản phẩm</span>
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                {selectedCategory ? categories.find((c: any) => c.id === selectedCategory)?.name || 'Danh mục' : 'Tất cả sản phẩm'}
+              </h2>
+              {selectedCategory && (
+                <button onClick={() => setSelectedCategory(null)} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors">✕ Bỏ lọc</button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400">{filteredProducts.length} sản phẩm</span>
+              <Link to="/search" className="text-sm font-medium hover:underline" style={{ color: '#C9A96E' }}>Tìm kiếm →</Link>
+            </div>
           </div>
 
-          {allProducts.length === 0 ? (
+          {filteredProducts.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <p className="text-5xl mb-3">🏪</p>
-              <p className="text-sm">Chưa có sản phẩm nào trong cửa hàng</p>
+              <p className="text-sm">Không có sản phẩm nào trong danh mục này</p>
+              <button onClick={() => setSelectedCategory(null)} className="mt-3 text-sm font-medium px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">Xem tất cả</button>
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-5 stagger-children">
-              {allProducts.map((p) => (
+              {filteredProducts.map((p: any) => (
                 <ProductCard key={p.id} p={p} sessionId={sessionId!} userId={userId} />
               ))}
             </div>
@@ -265,6 +407,22 @@ export default function Home() {
           <p className="text-xs text-gray-400">© 2026 Fashion Store. All rights reserved.</p>
         </footer>
       </div>
+
+      {/* Voucher Toast */}
+      {toastCode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-slide-up">
+          <div className="flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl" style={{ background: '#111827', border: '1px solid #1F2937' }}>
+            <span className="text-xl">🎫</span>
+            <div>
+              <p className="text-xs text-gray-400">Đã copy mã giảm giá</p>
+              <p className="text-sm font-black tracking-widest text-white">{toastCode}</p>
+            </div>
+            <span className="text-xs font-semibold px-2 py-1 rounded-lg" style={{ background: 'rgba(34,197,94,0.15)', color: '#22C55E' }}>
+              Dùng khi thanh toán
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
